@@ -113,18 +113,39 @@ classdef BioProcess < dynamicprops
             end
         end
         
-        function [t,xi] = euler(obj,dt,tspan,xi0,xi_in,D)
+        function [t,xi,varargout] = euler(obj,dt,tspan,xi0,xi_in,Dfeed,varargin)
+            args=length(varargin);
             t=tspan(1):dt:tspan(2);
             N=length(t);
             xi=nan(obj.NumberStates,N);
             xi(:,1)=xi0;
-            for idx=2:N
-                xi(:,idx)=xi(:,idx-1)+dt*obj.stateSpace(t,xi(:,idx-1),xi_in,D);
+            if args>=2
+                V=nan(1,N);
+                V(1)=varargin{2};
             end
+            
+            for idx=2:N
+                if args>0
+                    tFeed = varargin{1};
+                    if idx*dt>=tFeed
+                        D=Dfeed;
+                    else
+                        D=0;
+                    end
+                end
+                xi(:,idx)=xi(:,idx-1)+dt*obj.stateSpace(t,xi(:,idx-1),xi_in,D);
+                if args>=2
+                    V(idx)=V(idx-1)+dt*D*V(idx-1);
+                end
+            end
+            
             t=t';
             xi=xi';
+            if args>=2
+                    varargout{1}=V';
+            end
+            
         end
-        
         
     end
 end
